@@ -1,0 +1,57 @@
+{
+  "name": "injular",
+  "version": "0.7.0",
+  "description": "Client code for injecting angular templates, controllers, directives, components and filters",
+  "main": "client/injular.js",
+  "scripts": {
+    "test": "npm run lint && npm run test:client",
+    "lint": "eslint .",
+    "test:client": "COVERAGE=1 karma start --single-run && ANGULAR_VERSION='1.2' karma start --single-run",
+    "build": "babel lib/fileChanger.js -o client/file-changer.js",
+    "watch": "npm-watch"
+  },
+  "watch": {
+    "build": "lib/fileChanger.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tfoxy/injular.git"
+  },
+  "keywords": [
+    "hot",
+    "reload",
+    "injection",
+    "angular",
+    "template",
+    "controller",
+    "component"
+  ],
+  "author": "Tomás Fox <tomas.c.fox@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tfoxy/injular/issues"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "babel-cli": "6.9.0",
+    "babel-plugin-transform-es2015-modules-umd": "6.8.0",
+    "babel-preset-es2015": "6.9.0",
+    "chai": "~3.5.0",
+    "chai-string": "~1.2.0",
+    "eslint": "~2.4.0",
+    "istanbul": "~0.4.3",
+    "jquery": "~1.12.4",
+    "karma": "~0.13.22",
+    "karma-chai-sinon": "~0.1.5",
+    "karma-coverage": "~0.5.5",
+    "karma-expect": "~1.1.2",
+    "karma-mocha": "~0.2.2",
+    "karma-phantomjs-launcher": "~1.0.0",
+    "karma-sinon": "~1.0.5",
+    "mocha": "~2.4.5",
+    "npm-watch": "~0.1.4",
+    "phantomjs-prebuilt": "~2.1.7",
+    "sinon": "~1.17.3",
+    "sinon-chai": "~2.8.0"
+  }
+}
