@@ -38,7 +38,7 @@
     _setLoggerPriority: setLoggerPriority
   };
 
-  if (typeof module !== 'undefined' && typeof exports !== 'undefined' && typeof module.exports === 'object') {
+  if (typeof module !== 'undefined' && typeof exports !== 'undefined' && typeof module.exports === exports) {
     module.exports = injular;
   } else {
     window.injular = injular;
