@@ -34,8 +34,14 @@
     injectTemplate: injectTemplate,
     injectScript: injectScript,
     newInstance: newInstance,
-    _logger: createLogger(),
-    _setLoggerPriority: setLoggerPriority
+    logger: createLogger(),
+    setLoggerPriority: setLoggerPriority,
+    patchAngularInstance: patchAngularInstance,
+    unpatchAngularInstance: unpatchAngularInstance,
+    setAppElement: setAppElement,
+    reloadRoute: reloadRoute,
+    setScriptUrl: setScriptUrl,
+    unsetScriptUrl: unsetScriptUrl
   };
 
   if (typeof module !== 'undefined' && typeof exports !== 'undefined' && typeof module.exports === exports) {
@@ -46,8 +52,8 @@
 
 
   function injectTemplate(data) {
-    injular._setLoggerPriority(data.logLevel);
-    injular._logger.debug('injectTemplate', data);
+    injular.setLoggerPriority(data.logLevel);
+    injular.logger.debug('injectTemplate', data);
     
     var $injector = getInjector();
 
@@ -65,21 +71,19 @@
 
 
   function injectScript(data) {
-    injular._setLoggerPriority(data.logLevel);
-    injular._logger.debug('injectScript', data);
-    
-    var hasDirective = indexOf(data.recipes, 'directive') >= 0;
+    injular.setLoggerPriority(data.logLevel);
+    injular.logger.debug('injectScript', data);
+
     var $injector = getInjector();
 
     var scriptUrl = data.scriptUrl;
     var localAngular = getLocalAngular($injector);
     localAngular._scriptUrl = scriptUrl;
+
     var jsInjector = new window.Function('angular', data.script);
     jsInjector(localAngular);
-    if (hasDirective) {
-      removeDeletedDirectives($injector, scriptUrl);
-    }
 
+    removeDeletedDirectives($injector, scriptUrl);
     reloadRoute($injector);
   }
 
@@ -127,7 +131,7 @@
         }
       }
     } else {
-      injular._logger.error(
+      injular.logger.error(
         'No directives for url:', scriptUrl, ' . Possible urls:',
         objectKeys(directivesByUrl)
       );
@@ -139,6 +143,9 @@
     var injular = getAuxInjular();
 
     if (!injular.localAngular) {
+      if (!$injector) {
+        $injector = getInjector();
+      }
       injular.localAngular = createLocalAngular(injular, $injector);
     }
     injular.indexByDirectiveName = {};
@@ -148,6 +155,9 @@
 
 
   function reloadRoute($injector) {
+    if (!$injector) {
+      $injector = getInjector();
+    }
     if ($injector.has('$state')) {
       $injector.get('$state').reload();
     } else if ($injector.has('$route')) {
@@ -173,11 +183,20 @@
 
 
   function getAppElement() {
+    var elem;
+    if (window.___injular___) {
+      var auxInjular = getAuxInjular();
+      elem = auxInjular.appElement;
+      if (elem) {
+        return elem;
+      }
+    }
+
     if (!document.querySelector) {
       throwError('Can\'t find document.querySelector');
     }
 
-    var elem = document.querySelector('[ng-app]');
+    elem = document.querySelector('[ng-app]');
 
     if (!elem) {
       throwError('Can\'t find [ng-app] element');
@@ -224,7 +243,7 @@
 
     $templateCache.remove(cacheUrl);
     $templateCache.put(cacheUrl, template);
-    injular._logger.debug('Template cache replaced:', cacheUrl);
+    injular.logger.debug('Template cache replaced:', cacheUrl);
 
     var prevTemplate = cache;
     if (isArray(cache) && cache.length > 1 && typeof cache[1] === 'string') {
@@ -245,7 +264,7 @@
       var templateNodes = getTemplateNodes(node, templateUrl, $injector);
       var newTemplateElements = angular.element(template);
       if (newTemplateElements.eq(-1)[0].nodeType !== COMMENT_NODE) {
-        injular._logger.info('POSSIBLE ERROR ON TEMPLATE:', templateUrl, ' . CHECK CLOSING TAGS');
+        injular.logger.info('POSSIBLE ERROR ON TEMPLATE:', templateUrl, ' . CHECK CLOSING TAGS');
         templateNodes.pop();
       }
       var templateElements = angular.element(templateNodes);
@@ -257,15 +276,15 @@
         cleanScope(scope, templateElements, prevTemplate, $compile, angular);
       }
 
-      injular._logger.debug('Replacing:', templateElements, ';with:', newTemplateElements);
+      injular.logger.debug('Replacing:', templateElements, ';with:', newTemplateElements);
       replaceWith(templateElements, newTemplateElements);
 
-      injular._logger.debug('Applying scope:', scope);
+      injular.logger.debug('Applying scope:', scope);
       scope.$apply(function(scope) {
         $compile(newTemplateElements)(scope);
       });
 
-      injular._logger.debug('Template applied:', templateUrl);
+      injular.logger.debug('Template applied:', templateUrl);
 
       tw.currentNode = newTemplateElements.eq(-1)[0];
     }
@@ -447,7 +466,7 @@
       }
     }
 
-    injular._logger.info('injular-end not found. Reloading route.');
+    injular.logger.info('injular-end not found. Reloading route.');
     reloadRoute($injector);
     throwError('Can\'t find ending comment node: injular-end ' + templateUrl);
   }
@@ -617,7 +636,7 @@
           });
         }
       } else {
-        injular._logger.error(
+        injular.logger.error(
           'No directives for url:', localAngular._scriptUrl, ' . Possible urls:',
           objectKeys(directivesByUrl)
         );
@@ -835,6 +854,44 @@
   function setLoggerPriority(logLevel) {
     if (typeof logLevel === 'undefined') return;
     
-    this._logger.priority = this._logger.logLevels[logLevel] || logLevel;
+    this.logger.priority = this.logger.logLevels[logLevel] || logLevel;
+  }
+
+
+  function patchAngularInstance() {
+    var localAngular = getLocalAngular();
+    if (localAngular === window.angular) {
+      return;
+    }
+    var auxInjular = getAuxInjular();
+    auxInjular.originalAngular = window.angular;
+    window.angular = localAngular;
+  }
+
+
+  function unpatchAngularInstance() {
+    var auxInjular = getAuxInjular();
+    window.angular = auxInjular.originalAngular;
+  }
+
+
+  function setAppElement(appElement) {
+    var auxInjular = getAuxInjular();
+    auxInjular.appElement = appElement;
+  }
+
+
+  function setScriptUrl(scriptUrl) {
+    var localAngular = getLocalAngular();
+    localAngular._scriptUrl = scriptUrl;
+  }
+
+
+  function unsetScriptUrl() {
+    var $injector = getInjector();
+    var localAngular = getLocalAngular($injector);
+    var scriptUrl = localAngular._scriptUrl;
+    removeDeletedDirectives($injector, scriptUrl);
+    delete localAngular._scriptUrl;
   }
 })(window, document);

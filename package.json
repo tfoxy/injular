@@ -1,6 +1,6 @@
 {
   "name": "injular",
-  "version": "0.7.0",
+  "version": "0.0.0",
   "description": "Client code for injecting angular templates, controllers, directives, components and filters",
   "main": "client/injular.js",
   "scripts": {
