@@ -1,0 +1,9 @@
+# node files
+node_modules/
+npm-debug.log
+
+# JetBrains files
+*.iml
+.idea/
+*.ipr
+*.iws
