@@ -13,6 +13,7 @@ module.exports = (config) => {
       'node_modules/angular/angular.js',
       '?(src|test)/**/*.js',
     ],
+    logLevel: config.LOG_INFO,
     plugins: [
       'karma-mocha',
       'karma-rollup-plugin',
