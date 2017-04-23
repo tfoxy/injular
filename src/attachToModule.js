@@ -25,6 +25,8 @@ function registerInjularDirective(name, directiveFactory) {
 
 export default function attachToModule(module, injularData) {
   /* eslint-disable no-param-reassign, no-underscore-dangle */
+  if (module.$injularAttached) return;
+  module.$injularAttached = true;
   module.config(['$compileProvider', ($compileProvider) => {
     if ('_nonInjularDirective' in $compileProvider) return;
     $compileProvider._nonInjularDirective = $compileProvider.directive;
