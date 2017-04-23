@@ -11,7 +11,6 @@ server.start();
 
 chokidar.watch(path.resolve(__dirname, '..', '?(src|test)/**/*.js'), {
   ignoreInitial: true,
-}).on('all', (event, filepath) => {
-  console.log('CHANGED', filepath);
+}).on('all', () => {
   server.refreshFiles();
 });
