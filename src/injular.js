@@ -1,71 +1,12 @@
-const DIRECTIVE_SUFFIX = 'Directive';
-
-function assign(target) {
-  if (target == null) {
-    throw new TypeError('Cannot convert undefined or null to object');
-  }
-
-  const to = Object(target);
-
-  for (let index = 1; index < arguments.length; index += 1) {
-    // eslint-disable-next-line prefer-rest-params
-    const nextSource = arguments[index];
-    if (nextSource != null) {
-      // eslint-disable-next-line no-restricted-syntax
-      for (const nextKey in nextSource) {
-        if (Object.prototype.hasOwnProperty.call(nextSource, nextKey)) {
-          to[nextKey] = nextSource[nextKey];
-        }
-      }
-    }
-  }
-  return to;
-}
-
-const SNAKE_CASE_REGEXP = /[A-Z]/g;
-function kebabCase(name) {
-  return name.replace(SNAKE_CASE_REGEXP, (letter, pos) =>
-    (pos ? '-' : '') + letter.toLowerCase(),
-  );
-}
-
-
-const CNTRL_REG = /^(\S+)(\s+as\s+([\w$]+))?$/;
-function identifierForController(controller) {
-  if (typeof controller === 'string') {
-    const match = CNTRL_REG.exec(controller);
-    if (match) return match[3];
-  }
-  return undefined;
-}
-
-
-function instantiateDirective(name, directiveFactory, $injector) {
-  // Code from $compileProvider.directive
-  let directive = $injector.invoke(directiveFactory);
-  if (typeof directive === 'function') {
-    directive = { compile: () => directive };
-  } else if (!directive.compile && directive.link) {
-    directive.compile = () => directive.link;
-  }
-  directive.priority = directive.priority || 0;
-  directive.name = directive.name || name;
-  directive.require = directive.require || (directive.controller && directive.name);
-  directive.restrict = directive.restrict || 'EA';
-  directive.$$moduleName = directiveFactory.$$moduleName;
-  return directive;
-}
-
-
-function removeReplaceableDirectiveProperties(directive) {
-  // eslint-disable-next-line no-restricted-syntax
-  for (const key in directive) {
-    if (key !== 'index') {
-      // eslint-disable-next-line no-param-reassign
-      delete directive[key];
-    }
-  }
-}
+import { assign, kebabCase } from './helpers';
+import {
+  DIRECTIVE_SUFFIX,
+  identifierForController,
+  instantiateDirective,
+  removeReplaceableDirectiveProperties,
+} from './ngHelpers';
+import attachToModule from './attachToModule';
+import proxifyAngular from './proxifyAngular';
 
 
 function injectDirective(name, directiveFactory, injularData) {
@@ -162,45 +103,11 @@ function injectComponent(name, options, injularData) {
 }
 
 
-function injularCompile($compileNode, templateAttrs, childTranscludeFn) {
-  const node = $compileNode[0];
-  node.$injularTemplate = node.outerHTML;
-  // eslint-disable-next-line no-underscore-dangle, max-len
-  return this._nonInjularCompile && this._nonInjularCompile($compileNode, templateAttrs, childTranscludeFn);
-}
-
-
-function injularDirective(name, directiveFactory) {
-  // eslint-disable-next-line no-underscore-dangle
-  return this._nonInjularDirective(name, ['$injector', ($injector) => {
-    const directive = instantiateDirective(name, directiveFactory, $injector);
-    if (!directive.template && directive.restrict === 'E') {
-      // eslint-disable-next-line no-underscore-dangle,
-      directive._nonInjularCompile = directive.compile;
-      directive.compile = injularCompile;
-    }
-    return directive;
-  }]);
-}
-
-
-function attachToModule(module, injularData) {
-  /* eslint-disable no-param-reassign, no-underscore-dangle */
-  module.config(['$compileProvider', ($compileProvider) => {
-    if ('_nonInjularDirective' in $compileProvider) return;
-    $compileProvider._nonInjularDirective = $compileProvider.directive;
-    $compileProvider.directive = injularDirective;
-  }]).run(['$injector', ($injector) => {
-    injularData.$injector = $injector;
-  }]);
-  /* eslint-enable no-param-reassign, no-underscore-dangle */
-}
-
-
 const injular = {
   attachToModule,
   injectComponent,
   injectDirective,
+  proxifyAngular,
 };
 
 export default injular;

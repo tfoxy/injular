@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import angular from 'angular';
+import { assign } from '../src/helpers';
 import injular from '../src/injular';
 
 const MODULE_NAME = 'testModule';
@@ -110,6 +111,75 @@ describe('injular', () => {
       angular.bootstrap(rootElement, [INJULAR_MODULE_NAME, MODULE_NAME]);
 
       expect(rootElement.firstChild).to.have.property('$injularTemplate', template);
+    });
+  });
+
+  describe('.proxifyAngular', () => {
+    let angularCopy;
+    beforeEach(() => {
+      angularCopy = assign({}, angular);
+    });
+
+    it('should replace component recipe function in order to inject them', () => {
+      const injularData = {};
+
+      angular.module(INJULAR_MODULE_NAME, [])
+      .run(($injector) => {
+        injularData.$injector = $injector;
+      });
+
+      function registerModule(angularInstance, msg) {
+        angularInstance.module(MODULE_NAME, [])
+        .component('testComponent', {
+          controller: function TestComponent() { this.msg = msg; },
+          template: '{{$ctrl.msg}}',
+        });
+      }
+      registerModule(angular, 'foo');
+
+      const rootElement = document.createElement('div');
+      rootElement.innerHTML = '<test-component></test-component>';
+      angular.bootstrap(rootElement, [INJULAR_MODULE_NAME, MODULE_NAME]);
+
+      expect(rootElement.textContent).to.equal('foo');
+
+      injular.proxifyAngular(angularCopy, injularData);
+      registerModule(angularCopy, 'bar');
+
+      expect(rootElement.textContent).to.equal('bar');
+    });
+
+    it('should add $injularUnproxify method to remove injular proxy', () => {
+      const injularData = {};
+      const moduleFn = angular.module;
+
+      angular.module(INJULAR_MODULE_NAME, [])
+      .run(($injector) => {
+        injularData.$injector = $injector;
+      });
+
+      function registerModule(angularInstance) {
+        return angularInstance.module(MODULE_NAME, [])
+        .component('testComponent', {
+          controller: function TestComponent() { this.msg = 'foo'; },
+          template: '{{$ctrl.msg}}',
+        });
+      }
+      const module = registerModule(angular);
+      const componentRecipe = module.component;
+
+      const rootElement = document.createElement('div');
+      angular.bootstrap(rootElement, [INJULAR_MODULE_NAME, MODULE_NAME]);
+
+      injular.proxifyAngular(angularCopy, injularData);
+      const newModule = registerModule(angularCopy);
+      // eslint-disable-next-line no-underscore-dangle
+      const newComponentRecipe = newModule._nonInjularComponent;
+      angularCopy.$injularUnproxify();
+
+      expect(angularCopy.module).to.equal(moduleFn);
+      expect(module.component).to.equal(componentRecipe);
+      expect(newModule.component).to.equal(newComponentRecipe);
     });
   });
 });
