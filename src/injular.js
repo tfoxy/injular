@@ -5,7 +5,7 @@ import {
   instantiateDirective,
   removeReplaceableDirectiveProperties,
 } from './ngHelpers';
-import attachToModule from './attachToModule';
+import attachToModule, { injularCompile } from './attachToModule';
 import proxifyAngular from './proxifyAngular';
 
 
@@ -15,7 +15,7 @@ function injectDirective(name, directiveFactory, injularData) {
   const directive = directives[0];
   const newDirective = instantiateDirective(name, directiveFactory, $injector);
   removeReplaceableDirectiveProperties(directive);
-  assign(directive, newDirective);
+  assign(directive, { compile: injularCompile }, newDirective);
   const $compile = $injector.get('$compile');
   const $rootElement = $injector.get('$rootElement');
   const kebabName = kebabCase(name);
@@ -36,7 +36,7 @@ function injectDirective(name, directiveFactory, injularData) {
     }
     const $newComponentElement = $compile(componentTemplate)(parentScope);
     $componentElement.replaceWith($newComponentElement);
-    parentScope.$digest();
+    $newComponentElement.scope().$digest();
   }
 }
 

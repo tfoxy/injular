@@ -75,6 +75,43 @@ describe('injular', () => {
 
       expect(rootElement.textContent).to.equal('bar');
     });
+
+    it('should inject component-like directive with no template and isolated scope with an $injularTemplate property', () => {
+      const injularData = {};
+
+      angular.module(MODULE_NAME, [])
+      .run(($injector) => {
+        injularData.$injector = $injector;
+      })
+      .directive('testComponent', () => ({
+        bindToController: {},
+        controller: function TestComponent() { this.msg = 'foo'; },
+        controllerAs: '$ctrl',
+        restrict: 'E',
+        scope: true,
+        compile: ($el) => {
+          const el = $el[0];
+          el.$injularTemplate = el.outerHTML;
+        },
+      }));
+
+      const template = '<test-component>{{$ctrl.msg}}</test-component>';
+      const rootElement = document.createElement('div');
+      rootElement.innerHTML = template;
+      angular.bootstrap(rootElement, [MODULE_NAME]);
+
+      expect(rootElement.textContent).to.equal('foo');
+
+      injular.injectDirective('testComponent', () => ({
+        bindToController: {},
+        controller: function TestComponent() { this.msg = 'bar'; },
+        controllerAs: '$ctrl',
+        restrict: 'E',
+        scope: true,
+      }), injularData);
+
+      expect(rootElement.firstChild).to.have.property('$injularTemplate', template);
+    });
   });
 
   describe('.attachToModule', () => {

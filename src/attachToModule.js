@@ -1,7 +1,7 @@
 import { instantiateDirective } from './ngHelpers';
 
 
-function injularCompile($compileNode, templateAttrs, childTranscludeFn) {
+export function injularCompile($compileNode, templateAttrs, childTranscludeFn) {
   const node = $compileNode[0];
   node.$injularTemplate = node.outerHTML;
   // eslint-disable-next-line no-underscore-dangle, max-len
