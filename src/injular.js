@@ -36,7 +36,7 @@ function injectDirective(name, directiveFactory, injularData) {
     }
     const $newComponentElement = $compile(componentTemplate)(parentScope);
     $componentElement.replaceWith($newComponentElement);
-    $newComponentElement.scope().$digest();
+    parentScope.$digest();
   }
 }
 
