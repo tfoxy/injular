@@ -18,10 +18,15 @@ function injectDirective(name, directiveFactory, injularData) {
   assign(directive, { compile: injularCompile }, newDirective);
   const $compile = $injector.get('$compile');
   const $rootElement = $injector.get('$rootElement');
+  const rootElement = $rootElement[0];
+  const document = rootElement.ownerDocument;
+  const window = document.defaultView;
+  const angular = injularData.angular || window.angular;
   const kebabName = kebabCase(name);
-  const $componentElements = $rootElement.find(kebabName);
-  for (let i = 0; i < $componentElements.length; i += 1) {
-    const $componentElement = $componentElements.eq(i);
+  const componentElements = document.querySelectorAll(`.ng-scope ${kebabName}`);
+  for (let i = 0; i < componentElements.length; i += 1) {
+    const componentElement = componentElements[i];
+    const $componentElement = angular.element(componentElement);
     const scope = $componentElement.scope();
     const isolateScope = $componentElement.isolateScope();
     const componentScope = isolateScope || scope;

@@ -7,6 +7,18 @@ const MODULE_NAME = 'testModule';
 const INJULAR_MODULE_NAME = 'injularModule';
 
 describe('injular', () => {
+  let rootElement;
+
+  beforeEach(() => {
+    rootElement = document.createElement('div');
+    rootElement.style.display = 'none';
+    document.body.appendChild(rootElement);
+  });
+
+  afterEach(() => {
+    document.body.removeChild(rootElement);
+  });
+
   describe('.injectComponent', () => {
     it('should inject component with new scope', () => {
       const injularData = {};
@@ -20,9 +32,35 @@ describe('injular', () => {
         template: '{{$ctrl.msg}}',
       });
 
-      const rootElement = document.createElement('div');
       rootElement.innerHTML = '<test-component></test-component>';
       angular.bootstrap(rootElement, [MODULE_NAME]);
+
+      expect(rootElement.textContent).to.equal('foo');
+
+      injular.injectComponent('testComponent', {
+        controller: function TestComponent() { this.msg = 'bar'; },
+        template: '{{$ctrl.msg}}',
+      }, injularData);
+
+      expect(rootElement.textContent).to.equal('bar');
+    });
+
+    it('should inject component that was created outside root element', () => {
+      const injularData = {};
+
+      angular.module(MODULE_NAME, [])
+      .run(($injector, $compile, $rootScope) => {
+        const newScope = $rootScope.$new();
+        injularData.$injector = $injector;
+        $compile(rootElement.lastChild)(newScope);
+      })
+      .component('testComponent', {
+        controller: function TestComponent() { this.msg = 'foo'; },
+        template: '{{$ctrl.msg}}',
+      });
+
+      rootElement.innerHTML = '<div></div><div><test-component></test-component></div>';
+      angular.bootstrap(rootElement.firstChild, [MODULE_NAME]);
 
       expect(rootElement.textContent).to.equal('foo');
 
@@ -55,7 +93,6 @@ describe('injular', () => {
         },
       }));
 
-      const rootElement = document.createElement('div');
       rootElement.innerHTML = '<test-component>{{$ctrl.msg}}</test-component>';
       angular.bootstrap(rootElement, [MODULE_NAME]);
 
@@ -96,7 +133,6 @@ describe('injular', () => {
       }));
 
       const template = '<test-component>{{$ctrl.msg}}</test-component>';
-      const rootElement = document.createElement('div');
       rootElement.innerHTML = template;
       angular.bootstrap(rootElement, [MODULE_NAME]);
 
@@ -121,7 +157,6 @@ describe('injular', () => {
       const module = angular.module(INJULAR_MODULE_NAME, []);
       injular.attachToModule(module, injularData);
 
-      const rootElement = document.createElement('div');
       angular.bootstrap(rootElement, [INJULAR_MODULE_NAME]);
 
       expect(injularData).to.have.property('$injector').to.be.an('object');
@@ -142,7 +177,6 @@ describe('injular', () => {
         scope: true,
       }));
 
-      const rootElement = document.createElement('div');
       const template = '<test-component>{{$ctrl.msg}}</test-component>';
       rootElement.innerHTML = template;
       angular.bootstrap(rootElement, [INJULAR_MODULE_NAME, MODULE_NAME]);
@@ -174,7 +208,6 @@ describe('injular', () => {
       }
       registerModule(angular, 'foo');
 
-      const rootElement = document.createElement('div');
       rootElement.innerHTML = '<test-component></test-component>';
       angular.bootstrap(rootElement, [INJULAR_MODULE_NAME, MODULE_NAME]);
 
@@ -205,7 +238,6 @@ describe('injular', () => {
       const module = registerModule(angular);
       const componentRecipe = module.component;
 
-      const rootElement = document.createElement('div');
       angular.bootstrap(rootElement, [INJULAR_MODULE_NAME, MODULE_NAME]);
 
       injular.proxifyAngular(angularCopy, injularData);
