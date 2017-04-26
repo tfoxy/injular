@@ -71,6 +71,38 @@ describe('injular', () => {
 
       expect(rootElement.textContent).to.equal('bar');
     });
+
+    it('should inject component with binding that does not exists in the dom', () => {
+      const injularData = {};
+      let $scope;
+
+      angular.module(MODULE_NAME, [])
+      .run(($injector, $compile, $rootScope) => {
+        $scope = $rootScope;
+        injularData.$injector = $injector;
+      })
+      .component('testComponent', {
+        bindings: { in: '@' },
+        controller: function TestComponent() { this.msg = 'foo'; },
+        template: '{{$ctrl.in}}{{$ctrl.msg}}',
+      });
+
+      rootElement.innerHTML = '<div ng-if="show"><test-component in="foo"></test-component></div>';
+      angular.bootstrap(rootElement, [MODULE_NAME]);
+
+      expect(rootElement.textContent).to.equal('');
+
+      injular.injectComponent('testComponent', {
+        bindings: { in: '@' },
+        controller: function TestComponent() { this.msg = 'bar'; },
+        template: '{{$ctrl.in}}{{$ctrl.msg}}',
+      }, injularData);
+
+      $scope.show = true;
+      $scope.$digest();
+
+      expect(rootElement.textContent).to.equal('foobar');
+    });
   });
 
   describe('.injectDirective', () => {
