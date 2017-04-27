@@ -126,7 +126,6 @@ describe('injular', () => {
       }, injularData);
 
       expect(rootElement.textContent).to.equal('bar');
-      console.log(rootElement);
     });
   });
 
