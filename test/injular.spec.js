@@ -77,7 +77,7 @@ describe('injular', () => {
       let $scope;
 
       angular.module(MODULE_NAME, [])
-      .run(($injector, $compile, $rootScope) => {
+      .run(($injector, $rootScope) => {
         $scope = $rootScope;
         injularData.$injector = $injector;
       })
@@ -102,6 +102,31 @@ describe('injular', () => {
       $scope.$digest();
 
       expect(rootElement.textContent).to.equal('foobar');
+    });
+
+    it('should inject component that was not registered before', () => {
+      const injularData = {};
+
+      angular.module(MODULE_NAME, [])
+      .config(($compileProvider) => {
+        injularData.$compileProvider = $compileProvider;
+      })
+      .run(($injector) => {
+        injularData.$injector = $injector;
+      });
+
+      rootElement.innerHTML = '<test-component></test-component>';
+      angular.bootstrap(rootElement, [MODULE_NAME]);
+
+      expect(rootElement.textContent).to.equal('');
+
+      injular.injectComponent('testComponent', {
+        controller: function TestComponent() { this.msg = 'bar'; },
+        template: '{{$ctrl.msg}}',
+      }, injularData);
+
+      expect(rootElement.textContent).to.equal('bar');
+      console.log(rootElement);
     });
   });
 
@@ -183,7 +208,7 @@ describe('injular', () => {
   });
 
   describe('.attachToModule', () => {
-    it('should add $injector to injularData after bootstrapping module', () => {
+    it('should add $injector and $compileProvider to injularData after bootstrapping module', () => {
       const injularData = {};
 
       const module = angular.module(INJULAR_MODULE_NAME, []);
@@ -192,6 +217,9 @@ describe('injular', () => {
       angular.bootstrap(rootElement, [INJULAR_MODULE_NAME]);
 
       expect(injularData).to.have.property('$injector').to.be.an('object');
+      expect(injularData.$injector).to.have.property('get').to.be.a('function');
+      expect(injularData).to.have.property('$compileProvider').to.be.an('object');
+      expect(injularData.$compileProvider).to.have.property('directive').to.be.a('function');
     });
 
     it('should patch directive registration so that $injularTemplate is set to the element when no template is provided', () => {

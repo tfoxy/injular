@@ -5,23 +5,33 @@ import {
   instantiateDirective,
   removeReplaceableDirectiveProperties,
 } from './ngHelpers';
-import attachToModule, { injularCompile } from './attachToModule';
-import proxifyAngular from './proxifyAngular';
+import { attachToModule, injularCompile } from './attachToModule';
+import { proxifyAngular } from './proxifyAngular';
 
 
 function injectDirective(name, directiveFactory, injularData) {
   const { $injector } = injularData;
-  const directives = $injector.get(`${name}${DIRECTIVE_SUFFIX}`);
-  const directive = directives[0];
-  const newDirective = instantiateDirective(name, directiveFactory, $injector);
-  removeReplaceableDirectiveProperties(directive);
-  assign(directive, { compile: injularCompile }, newDirective);
   const $compile = $injector.get('$compile');
   const $rootElement = $injector.get('$rootElement');
   const rootElement = $rootElement[0];
   const document = rootElement.ownerDocument;
   const window = document.defaultView;
   const angular = injularData.angular || window.angular;
+  const directiveServiceName = `${name}${DIRECTIVE_SUFFIX}`;
+  const directiveExists = $injector.has(directiveServiceName);
+  let directive;
+  if (directiveExists) {
+    const directives = $injector.get(directiveServiceName);
+    directive = directives[0];
+    const newDirective = instantiateDirective(name, directiveFactory, $injector);
+    removeReplaceableDirectiveProperties(directive);
+    assign(directive, { compile: injularCompile }, newDirective);
+  } else {
+    const { $compileProvider } = injularData;
+    $compileProvider.directive(name, directiveFactory);
+    const directives = $injector.get(directiveServiceName);
+    directive = directives[0];
+  }
   const kebabName = kebabCase(name);
   const componentElements = document.querySelectorAll(`.ng-scope ${kebabName}`);
   for (let i = 0; i < componentElements.length; i += 1) {
@@ -29,9 +39,11 @@ function injectDirective(name, directiveFactory, injularData) {
     const $componentElement = angular.element(componentElement);
     const scope = $componentElement.scope();
     const isolateScope = $componentElement.isolateScope();
-    const componentScope = isolateScope || scope;
-    const parentScope = isolateScope ? scope : scope.$parent;
-    componentScope.$destroy();
+    const parentScope = (isolateScope || !directiveExists) ? scope : scope.$parent;
+    if ($componentElement.hasClass('ng-scope')) {
+      const componentScope = isolateScope || scope;
+      componentScope.$destroy();
+    }
     let componentTemplate;
     if (directive.template) {
       $componentElement.children().remove();
@@ -41,7 +53,7 @@ function injectDirective(name, directiveFactory, injularData) {
     }
     const $newComponentElement = $compile(componentTemplate)(parentScope);
     $componentElement.replaceWith($newComponentElement);
-    $newComponentElement.scope().$digest();
+    parentScope.$digest();
   }
 }
 

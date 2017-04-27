@@ -44,7 +44,7 @@ function injularUnproxify() {
 }
 
 
-export default function proxifyAngular(angular, injularData) {
+export function proxifyAngular(angular, injularData) {
   if ('_injular' in angular) return;
   angular._injular = this;
   angular._injularData = injularData;
