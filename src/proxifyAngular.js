@@ -2,13 +2,21 @@
 
 
 function injularDirective(name, directiveFactory) {
-  this._injular.injectDirective(name, directiveFactory, this._injularData);
+  if (this.name in this._injularData.$injector.modules) {
+    this._injular.injectDirective(name, directiveFactory, this._injularData);
+  } else {
+    this._nonInjularDirective(name, directiveFactory);
+  }
   return this;
 }
 
 
 function injularComponent(name, options) {
-  this._injular.injectComponent(name, options, this._injularData);
+  if (this.name in this._injularData.$injector.modules) {
+    this._injular.injectComponent(name, options, this._injularData);
+  } else {
+    this._nonInjularComponent(name, options);
+  }
   return this;
 }
 

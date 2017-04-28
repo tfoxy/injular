@@ -5,6 +5,7 @@ import injular from '../src/injular';
 
 const MODULE_NAME = 'testModule';
 const INJULAR_MODULE_NAME = 'injularModule';
+const AUX_MODULE_NAME = 'auxTestModule';
 
 describe('injular', () => {
   let rootElement;
@@ -308,6 +309,36 @@ describe('injular', () => {
       expect(angularCopy.module).to.equal(moduleFn);
       expect(module.component).to.equal(componentRecipe);
       expect(newModule.component).to.equal(newComponentRecipe);
+    });
+
+    it('should not inject component that is not part of the application module', () => {
+      const injularData = {};
+
+      angular.module(INJULAR_MODULE_NAME, [])
+      .run(($injector) => {
+        injularData.$injector = $injector;
+      });
+
+      angular.module(MODULE_NAME, []);
+
+      function registerModule(angularInstance, msg) {
+        angularInstance.module(AUX_MODULE_NAME, [])
+        .component('testComponent', {
+          controller: function TestComponent() { this.msg = msg; },
+          template: '{{$ctrl.msg}}',
+        });
+      }
+      registerModule(angular, 'foo');
+
+      rootElement.innerHTML = '<test-component></test-component>';
+      angular.bootstrap(rootElement, [INJULAR_MODULE_NAME, MODULE_NAME]);
+
+      expect(rootElement.textContent).to.equal('');
+
+      injular.proxifyAngular(angularCopy, injularData);
+      registerModule(angularCopy, 'bar');
+
+      expect(rootElement.textContent).to.equal('');
     });
   });
 });
