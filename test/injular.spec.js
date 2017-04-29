@@ -340,5 +340,35 @@ describe('injular', () => {
 
       expect(rootElement.textContent).to.equal('');
     });
+
+    it('should inject component inside new module requirement', () => {
+      const injularData = {};
+
+      angular.module(INJULAR_MODULE_NAME, [])
+      .config(($compileProvider) => {
+        injularData.$compileProvider = $compileProvider;
+      })
+      .run(($injector) => {
+        injularData.$injector = $injector;
+      });
+
+      angular.module(MODULE_NAME, []);
+
+      angular.module(AUX_MODULE_NAME, [])
+      .component('testComponent', {
+        controller: function TestComponent() { this.msg = 'foo'; },
+        template: '{{$ctrl.msg}}',
+      });
+
+      rootElement.innerHTML = '<test-component></test-component>';
+      angular.bootstrap(rootElement, [INJULAR_MODULE_NAME, MODULE_NAME]);
+
+      expect(rootElement.textContent).to.equal('');
+
+      injular.proxifyAngular(angularCopy, injularData);
+      angularCopy.module(MODULE_NAME, [AUX_MODULE_NAME]);
+
+      expect(rootElement.textContent).to.equal('foo');
+    });
   });
 });

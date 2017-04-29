@@ -22,7 +22,13 @@ function injularComponent(name, options) {
 
 
 function injularModule(name, requires, configFn) {
-  const module = this._nonInjularModule(name, requires, configFn);
+  const modulesMap = this._injularData.$injector.modules;
+  let module = modulesMap[name];
+  const moduleCreated = !module;
+  if (moduleCreated) {
+    module = this._nonInjularModule(name, requires, configFn);
+  }
+  if (module._injular) return module;
   this._injularModules.push(module);
   module._injular = this._injular;
   module._injularData = this._injularData;
@@ -30,6 +36,18 @@ function injularModule(name, requires, configFn) {
   module.directive = injularDirective;
   module._nonInjularComponent = module.component;
   module.component = injularComponent;
+  if (!moduleCreated && requires) {
+    const modulesToLoad = requires.filter(require =>
+      !(require in modulesMap),
+    );
+    modulesToLoad.forEach((moduleName) => {
+      const moduleInstance = this.module(moduleName);
+      modulesMap[moduleName] = moduleInstance;
+      moduleInstance._invokeQueue.forEach(([, method, args]) => {
+        moduleInstance[method].apply(moduleInstance, args);
+      });
+    });
+  }
   return module;
 }
 
