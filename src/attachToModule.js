@@ -27,6 +27,7 @@ export function attachToModule(module, injularData) {
   /* eslint-disable no-param-reassign, no-underscore-dangle */
   if (module.$injularAttached) return;
   module.$injularAttached = true;
+  injularData.loadingApp = true;
   module.config(['$compileProvider', ($compileProvider) => {
     if ('_nonInjularDirective' in $compileProvider) return;
     $compileProvider._nonInjularDirective = $compileProvider.directive;
@@ -34,6 +35,7 @@ export function attachToModule(module, injularData) {
     injularData.$compileProvider = $compileProvider;
   }]).run(['$injector', ($injector) => {
     injularData.$injector = $injector;
+    injularData.loadingApp = false;
   }]);
   /* eslint-enable no-param-reassign, no-underscore-dangle */
 }

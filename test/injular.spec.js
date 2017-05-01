@@ -207,6 +207,34 @@ describe('injular', () => {
     });
   });
 
+  describe('.ejectComponent', () => {
+    it('should remove component from service', () => {
+      const injularData = {};
+
+      angular.module(MODULE_NAME, [])
+      .run(($injector) => {
+        injularData.$injector = $injector;
+      })
+      .directive('testComponent', () => ({
+        bindToController: {},
+        controller: function TestComponent() { this.msg = 'foo'; },
+        controllerAs: '$ctrl',
+        restrict: 'E',
+        scope: true,
+        template: '{{$ctrl.msg}}',
+      }));
+
+      rootElement.innerHTML = '<test-component></test-component>';
+      angular.bootstrap(rootElement, [MODULE_NAME]);
+
+      expect(rootElement.textContent).to.equal('foo');
+
+      injular.ejectComponent('testComponent', injularData);
+
+      expect(rootElement.textContent).to.equal('');
+    });
+  });
+
   describe('.attachToModule', () => {
     it('should add $injector and $compileProvider to injularData after bootstrapping module', () => {
       const injularData = {};
@@ -369,6 +397,41 @@ describe('injular', () => {
       angularCopy.module(MODULE_NAME, [AUX_MODULE_NAME]);
 
       expect(rootElement.textContent).to.equal('foo');
+    });
+
+    it('should remove previous component when calling $injularUnproxify', () => {
+      const injularData = {
+        loadingApp: true,
+        currentFile: 1,
+        loadedFiles: [1],
+      };
+
+      injular.proxifyAngular(angularCopy, injularData);
+
+      angularCopy.module(INJULAR_MODULE_NAME, [])
+      .run(($injector) => {
+        injularData.$injector = $injector;
+        injularData.loadingApp = false;
+      });
+
+      angularCopy.module(MODULE_NAME, [])
+      .component('testComponent', {
+        controller: function TestComponent() { this.msg = 'foo'; },
+        template: '{{$ctrl.msg}}',
+      });
+
+      angularCopy.$injularFlushChanges();
+
+      rootElement.innerHTML = '<test-component></test-component>';
+      angular.bootstrap(rootElement, [INJULAR_MODULE_NAME, MODULE_NAME]);
+
+      expect(rootElement.textContent).to.equal('foo');
+
+      angularCopy.module(MODULE_NAME, []);
+
+      angularCopy.$injularUnproxify();
+
+      expect(rootElement.textContent).to.equal('');
     });
   });
 });
