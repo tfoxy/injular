@@ -1,18 +1,19 @@
 /* eslint-disable no-param-reassign, no-underscore-dangle */
+import { assign } from './helpers';
 
 
 function injularDirective(name, directiveFactory) {
-  const { $injector, loadingApp, currentFile, componentsByFile } = this._injularData;
+  const { $injector, loadingApp, currentFile, newComponentsByFile } = this._injularData;
   if (!loadingApp && this.name in $injector.modules) {
     this._injular.injectDirective(name, directiveFactory, this._injularData);
   } else {
     this._nonInjularDirective(name, directiveFactory);
   }
   if (currentFile) {
-    let moduleDirectives = componentsByFile[currentFile];
+    let moduleDirectives = newComponentsByFile[currentFile];
     if (!moduleDirectives) {
       moduleDirectives = [];
-      componentsByFile[currentFile] = moduleDirectives;
+      newComponentsByFile[currentFile] = moduleDirectives;
     }
     moduleDirectives.push(name);
   }
@@ -21,17 +22,17 @@ function injularDirective(name, directiveFactory) {
 
 
 function injularComponent(name, options) {
-  const { $injector, loadingApp, currentFile, componentsByFile } = this._injularData;
+  const { $injector, loadingApp, currentFile, newComponentsByFile } = this._injularData;
   if (!loadingApp && this.name in $injector.modules) {
     this._injular.injectComponent(name, options, this._injularData);
   } else {
     this._nonInjularComponent(name, options);
   }
   if (currentFile) {
-    let moduleDirectives = componentsByFile[currentFile];
+    let moduleDirectives = newComponentsByFile[currentFile];
     if (!moduleDirectives) {
       moduleDirectives = [];
-      componentsByFile[currentFile] = moduleDirectives;
+      newComponentsByFile[currentFile] = moduleDirectives;
     }
     moduleDirectives.push(name);
   }
@@ -46,6 +47,30 @@ function injularModule(name, requires, configFn) {
   const moduleCreated = !module;
   if (moduleCreated) {
     module = this._nonInjularModule(name, requires, configFn);
+  } else if (requires) {
+    const modulesToLoad = requires.filter(require =>
+      !(require in modulesMap),
+    );
+    const modulesToUnload = module.requires.filter(
+      require => requires.indexOf(require) < 0,
+    );
+    modulesToLoad.forEach((moduleName) => {
+      const moduleInstance = this.module(moduleName);
+      modulesMap[moduleName] = moduleInstance;
+      moduleInstance._invokeQueue.forEach(([, method, args]) => {
+        moduleInstance[method].apply(moduleInstance, args);
+      });
+    });
+    modulesToUnload.forEach((moduleName) => {
+      const moduleInstance = this.module(moduleName);
+      modulesMap[moduleName] = moduleInstance;
+      moduleInstance._invokeQueue.forEach(([, method, args]) => {
+        if (method === 'directive' || method === 'component') {
+          const componentName = args[0];
+          this._injular.ejectComponent(componentName, this._injularData);
+        }
+      });
+    });
   }
   if (module._injular) return module;
   this._injularModules.push(module);
@@ -55,18 +80,6 @@ function injularModule(name, requires, configFn) {
   module.directive = injularDirective;
   module._nonInjularComponent = module.component;
   module.component = injularComponent;
-  if (!moduleCreated && requires) {
-    const modulesToLoad = requires.filter(require =>
-      !(require in modulesMap),
-    );
-    modulesToLoad.forEach((moduleName) => {
-      const moduleInstance = this.module(moduleName);
-      modulesMap[moduleName] = moduleInstance;
-      moduleInstance._invokeQueue.forEach(([, method, args]) => {
-        moduleInstance[method].apply(moduleInstance, args);
-      });
-    });
-  }
   return module;
 }
 
@@ -77,21 +90,26 @@ function injularFlushChanges() {
   const {
     loadingApp,
     loadedFiles,
-    previousComponentsByFile,
-    componentsByFile,
+    newComponentsByFile,
   } = injularData;
+  let componentsByFile = injularData.componentsByFile;
+  if (!componentsByFile) {
+    componentsByFile = Object.create(null);
+    injularData.componentsByFile = componentsByFile;
+  }
   if (!loadingApp && loadedFiles) {
     loadedFiles.forEach((currentFile) => {
-      const previousComponents = previousComponentsByFile[currentFile];
-      const fileComponents = componentsByFile[currentFile] || [];
+      const previousComponents = componentsByFile[currentFile];
+      if (!previousComponents) return;
+      const fileComponents = newComponentsByFile[currentFile] || [];
       previousComponents.filter(d => fileComponents.indexOf(d)).forEach((d) => {
         injular.ejectComponent(d, injularData);
       });
     });
   }
-  injularData.previousComponentsByFile =
-    injularData.componentsByFile || Object.create(null);
-  injularData.componentsByFile = Object.create(null);
+  assign(injularData.componentsByFile, injularData.newComponentsByFile);
+  injularData.newComponentsByFile = Object.create(null);
+  injularData.loadedFiles = [];
 }
 
 
@@ -116,7 +134,7 @@ function injularUnproxify() {
 
 export function proxifyAngular(angular, injularData) {
   if ('_injular' in angular) return;
-  injularData.componentsByFile = Object.create(null);
+  injularData.newComponentsByFile = Object.create(null);
   angular._injular = this;
   angular._injularData = injularData;
   angular._injularModules = [];
