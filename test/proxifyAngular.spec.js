@@ -6,6 +6,7 @@ import {
   MODULE_NAME,
   AUX_MODULE_NAME,
   INJULAR_MODULE_NAME,
+  AUX_2ND_MODULE_NAME,
   createRootElement,
   removeRootElement,
 } from './testHelpers';
@@ -268,5 +269,42 @@ describe('.proxifyAngular', () => {
     angularCopy.$injularUnproxify();
 
     expect(rootElement.textContent).to.equal('');
+  });
+
+  it('should not remove unregistered module if another module requires it', () => {
+    const injularData = {
+      loadingApp: true,
+      loadedFiles: [INJULAR_MODULE_NAME, AUX_MODULE_NAME, AUX_2ND_MODULE_NAME, MODULE_NAME],
+    };
+
+    injular.proxifyAngular(angularCopy, injularData);
+    injularData.currentFile = INJULAR_MODULE_NAME;
+    angularCopy.module(INJULAR_MODULE_NAME, [])
+    .run(($injector) => {
+      injularData.$injector = $injector;
+      injularData.loadingApp = false;
+    });
+    injularData.currentFile = AUX_MODULE_NAME;
+    angularCopy.module(AUX_MODULE_NAME, [])
+    .component('testComponent', {
+      controller: function TestComponent() { this.msg = 'foo'; },
+      template: '{{$ctrl.msg}}',
+    });
+    injularData.currentFile = AUX_2ND_MODULE_NAME;
+    angularCopy.module(AUX_2ND_MODULE_NAME, [AUX_MODULE_NAME]);
+    injularData.currentFile = MODULE_NAME;
+    angularCopy.module(MODULE_NAME, [AUX_2ND_MODULE_NAME, AUX_MODULE_NAME]);
+    angularCopy.$injularFlushChanges();
+
+    rootElement.innerHTML = '<test-component></test-component>';
+    angular.bootstrap(rootElement, [INJULAR_MODULE_NAME, MODULE_NAME]);
+
+    expect(rootElement.textContent).to.equal('foo');
+
+    injularData.loadedFiles = [MODULE_NAME];
+    angularCopy.module(MODULE_NAME, [AUX_2ND_MODULE_NAME]);
+    angularCopy.$injularUnproxify();
+
+    expect(rootElement.textContent).to.equal('foo');
   });
 });

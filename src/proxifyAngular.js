@@ -48,11 +48,15 @@ function injularModule(name, requires, configFn) {
   if (moduleCreated) {
     module = this._nonInjularModule(name, requires, configFn);
   } else if (requires) {
+    const previousRequires = module.requires;
+    module.requires = requires;
     const modulesToLoad = requires.filter(require =>
       !(require in modulesMap),
     );
-    const modulesToUnload = module.requires.filter(
-      require => requires.indexOf(require) < 0,
+    const modulesToUnload = previousRequires.filter(
+      require => !Object.keys(modulesMap).some(
+        moduleName => modulesMap[moduleName].requires.indexOf(require) >= 0,
+      ),
     );
     modulesToLoad.forEach((moduleName) => {
       const moduleInstance = this.module(moduleName);
