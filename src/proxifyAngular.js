@@ -1,5 +1,5 @@
-/* eslint-disable no-param-reassign, no-underscore-dangle */
 import { assign } from './helpers';
+import { injectModuleRequires } from './injectModule';
 
 
 function injularDirective(name, directiveFactory) {
@@ -48,33 +48,7 @@ function injularModule(name, requires, configFn) {
   if (moduleCreated) {
     module = this._nonInjularModule(name, requires, configFn);
   } else if (requires) {
-    const previousRequires = module.requires;
-    module.requires = requires;
-    const modulesToLoad = requires.filter(require =>
-      !(require in modulesMap),
-    );
-    const modulesToUnload = previousRequires.filter(
-      require => !Object.keys(modulesMap).some(
-        moduleName => modulesMap[moduleName].requires.indexOf(require) >= 0,
-      ),
-    );
-    modulesToLoad.forEach((moduleName) => {
-      const moduleInstance = this.module(moduleName);
-      modulesMap[moduleName] = moduleInstance;
-      moduleInstance._invokeQueue.forEach(([, method, args]) => {
-        moduleInstance[method].apply(moduleInstance, args);
-      });
-    });
-    modulesToUnload.forEach((moduleName) => {
-      const moduleInstance = this.module(moduleName);
-      modulesMap[moduleName] = moduleInstance;
-      moduleInstance._invokeQueue.forEach(([, method, args]) => {
-        if (method === 'directive' || method === 'component') {
-          const componentName = args[0];
-          this._injular.ejectComponent(componentName, this._injularData);
-        }
-      });
-    });
+    injectModuleRequires(module, requires, this._injularData, this);
   }
   if (module._injular) return module;
   this._injularModules.push(module);
