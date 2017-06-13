@@ -307,4 +307,59 @@ describe('.proxifyAngular', () => {
 
     expect(rootElement.textContent).to.equal('foo');
   });
+
+  it('should call rejectCallback when executing config block', () => {
+    let called = false;
+    const rejectCallback = () => { called = true; };
+    const injularData = {
+      loadingApp: true,
+      rejectCallback,
+    };
+
+    injular.proxifyAngular(angularCopy, injularData);
+    angularCopy.module(INJULAR_MODULE_NAME, [])
+    .run(($injector) => {
+      injularData.$injector = $injector;
+      injularData.loadingApp = false;
+    });
+    angularCopy.module(MODULE_NAME, []).config(() => {});
+    angularCopy.$injularFlushChanges();
+
+    rootElement.innerHTML = '<div></div>';
+    angular.bootstrap(rootElement, [INJULAR_MODULE_NAME, MODULE_NAME]);
+
+    expect(called).to.equal(false);
+
+    angularCopy.module(MODULE_NAME, []).config(() => {});
+
+    expect(called).to.equal(true);
+  });
+
+  it('should call rejectCallback when removing a config block', () => {
+    let called = false;
+    const rejectCallback = () => { called = true; };
+    const injularData = {
+      loadingApp: true,
+      rejectCallback,
+    };
+
+    injular.proxifyAngular(angularCopy, injularData);
+    angularCopy.module(INJULAR_MODULE_NAME, [])
+    .run(($injector) => {
+      injularData.$injector = $injector;
+      injularData.loadingApp = false;
+    });
+    angularCopy.module(MODULE_NAME, []).config(() => {});
+    angularCopy.$injularFlushChanges();
+
+    rootElement.innerHTML = '<div></div>';
+    angular.bootstrap(rootElement, [INJULAR_MODULE_NAME, MODULE_NAME]);
+
+    expect(called).to.equal(false);
+
+    angularCopy.module(MODULE_NAME, []);
+    angularCopy.$injularUnproxify();
+
+    expect(called).to.equal(true);
+  });
 });

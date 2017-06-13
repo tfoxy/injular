@@ -40,6 +40,15 @@ function injularComponent(name, options) {
 }
 
 
+function injularConfig(block) {
+  const { loadingApp, rejectCallback } = this._injularData;
+  if (!loadingApp && rejectCallback) {
+    rejectCallback();
+  }
+  this._nonInjularConfig(block);
+}
+
+
 function injularModule(name, requires, configFn) {
   const { $injector } = this._injularData;
   const modulesMap = $injector ? $injector.modules : null;
@@ -58,6 +67,8 @@ function injularModule(name, requires, configFn) {
   module.directive = injularDirective;
   module._nonInjularComponent = module.component;
   module.component = injularComponent;
+  module._nonInjularConfig = module.config;
+  module.config = injularConfig;
   return module;
 }
 
