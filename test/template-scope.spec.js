@@ -343,7 +343,7 @@ describe('template injection (scope)', function() {
   angular.forEach([
     { name: 'binding', template: '{{foo}}' },
     { name: 'multiple bindings', template: '{{foo}}{{bar}}', watchersCount: VERSION_MINOR >= 3 ? 2 : 1 },
-    { name: 'ng-model', template: '<input ng-model="foo">', $destroyCount: 1 },
+    { name: 'ng-model', template: '<input ng-model="foo">', $destroyCount: VERSION_MINOR >= 6 ? 2 : 1 },
     { name: 'ng-repeat', template: '<input ng-repeat="foo in foos">' },
     { name: 'ng-if', template: '<input ng-if="foo">' },
     { name: 'ng-class', template: '<input ng-class="foo">' },
@@ -363,7 +363,7 @@ describe('template injection (scope)', function() {
       name: 'ng-options',
       template: '<select ng-model="fooModel" ng-options="foo for foo in foos"></select>',
       watchersCount: VERSION_MINOR >= 3 ? 2 : 3,
-      $destroyCount: 2
+      $destroyCount: VERSION_MINOR >= 6 ? 3 : 2
     }
   ], function(ngDirective) {
     if (ngDirective.skip) return;

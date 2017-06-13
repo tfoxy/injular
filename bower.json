@@ -20,8 +20,9 @@
     "component"
   ],
   "devDependencies": {
+    "angular-1.6": "angular#~1.6.4",
     "angular-1.5": "angular#~1.5.8",
-    "angular-1.2": "angular#~1.2.29"
+    "angular-1.2": "angular#~1.2.32"
   },
   "license": "MIT",
   "ignore": [

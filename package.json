@@ -6,7 +6,7 @@
   "scripts": {
     "test": "npm run lint && npm run test:client",
     "lint": "eslint .",
-    "test:client": "COVERAGE=1 karma start --single-run && ANGULAR_VERSION='1.2' karma start --single-run",
+    "test:client": "COVERAGE=1 karma start --single-run && ANGULAR_VERSION='1.5' karma start --single-run && ANGULAR_VERSION='1.2' karma start --single-run",
     "build": "babel lib/fileChanger.js -o client/file-changer.js",
     "watch": "npm-watch"
   },

@@ -1,7 +1,7 @@
 'use strict';
 
 module.exports = function(config) {
-  const ANGULAR_VERSION = process.env.ANGULAR_VERSION || '1.5';
+  const ANGULAR_VERSION = process.env.ANGULAR_VERSION || '1.6';
 
   const props = {
     // base path that will be used to resolve all patterns (eg. files, exclude)
