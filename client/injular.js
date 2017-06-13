@@ -44,7 +44,7 @@
     unsetScriptUrl: unsetScriptUrl
   };
 
-  if (typeof module !== 'undefined' && typeof exports !== 'undefined' && typeof module.exports === exports) {
+  if (typeof module !== 'undefined' && typeof exports !== 'undefined' && module.exports === exports) {
     module.exports = injular;
   } else {
     window.injular = injular;
