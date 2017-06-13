@@ -89,16 +89,16 @@
 
 
   function getAuxInjular() {
-    var injular = window.___injular___;
+    var auxInjular = window.___injular___;
 
-    if (!injular) {
+    if (!auxInjular) {
       throwError(
         'Could not get window.___injular___ . ' +
         'Are you sure ngApp property in the injular options is correct?'
       );
     }
 
-    return injular;
+    return auxInjular;
   }
 
 
@@ -106,9 +106,9 @@
     if (!scriptUrl) {
       return;
     }
-    var injular = getAuxInjular();
-    var indexByDirectiveName = injular.indexByDirectiveName;
-    var directivesByUrl = injular.directivesByUrl;
+    var auxInjular = getAuxInjular();
+    var indexByDirectiveName = auxInjular.indexByDirectiveName;
+    var directivesByUrl = auxInjular.directivesByUrl;
     if (!directivesByUrl) {
       return;
     }
@@ -140,17 +140,17 @@
 
 
   function getLocalAngular($injector) {
-    var injular = getAuxInjular();
+    var auxInjular = getAuxInjular();
 
-    if (!injular.localAngular) {
+    if (!auxInjular.localAngular) {
       if (!$injector) {
         $injector = getInjector();
       }
-      injular.localAngular = createLocalAngular(injular, $injector);
+      auxInjular.localAngular = createLocalAngular(auxInjular, $injector);
     }
-    injular.indexByDirectiveName = {};
+    auxInjular.indexByDirectiveName = {};
 
-    return injular.localAngular;
+    return auxInjular.localAngular;
   }
 
 
@@ -547,7 +547,7 @@
   }
 
 
-  function createLocalAngular(injular, $injector) {
+  function createLocalAngular(auxInjular, $injector) {
     var angular = getAngular();
     var localAngular = angular.copy(angular);
     var moduleFn = localAngular.module;
@@ -560,7 +560,7 @@
       app.controller = injularControllerRecipe;
       app.directive = injularDirectiveRecipe;
       if ('component' in app) {
-        if ('$compileProvider' in injular) {
+        if ('$compileProvider' in auxInjular) {
           app.component = getCompileProvider().component.bind(app);
         } else {
           app.component = getCompileProvider;
@@ -582,18 +582,18 @@
     }
 
     function injularControllerRecipe() {
-      if (!injular.$controllerProvider) {
+      if (!auxInjular.$controllerProvider) {
         throwError(
           'Could not get $controllerProvider. ' +
           'Are you sure ngApp property in injular options is correct?'
         );
       }
-      injular.$controllerProvider.register.apply(injular.$controllerProvider, arguments);
+      auxInjular.$controllerProvider.register.apply(auxInjular.$controllerProvider, arguments);
       return this;
     }
 
     function injularFilterRecipe(name, filterFactory) {
-      var filtersCache = injular.filtersCache;
+      var filtersCache = auxInjular.filtersCache;
       if (!filtersCache) {
         throwError(
           'Could not get filtersCache. ' +
@@ -601,10 +601,10 @@
         );
       }
 
-      if (hasOwnProperty(injular.filtersCache, name)) {
-        injular.filtersCache[name] = $injector.invoke(filterFactory);
+      if (hasOwnProperty(auxInjular.filtersCache, name)) {
+        auxInjular.filtersCache[name] = $injector.invoke(filterFactory);
       } else {
-        var $filterProvider = injular.$filterProvider;
+        var $filterProvider = auxInjular.$filterProvider;
         if (!$filterProvider) {
           throwError(
             'Could not get $filterProvider. ' +
@@ -617,7 +617,7 @@
     }
 
     function injularDirectiveRecipe(name, directiveFactory) {
-      var directivesByUrl = injular.directivesByUrl;
+      var directivesByUrl = auxInjular.directivesByUrl;
       if (!directivesByUrl) {
         throwError(
           'Could not get directivesByUrl. ' +
@@ -648,14 +648,14 @@
     function injectDirective(name, directiveFactory, directivesByName) {
       var directiveList = directivesByName[name];
 
-      if (!hasOwnProperty(injular.indexByDirectiveName, name)) {
-        injular.indexByDirectiveName[name] = 0;
+      if (!hasOwnProperty(auxInjular.indexByDirectiveName, name)) {
+        auxInjular.indexByDirectiveName[name] = 0;
       }
 
       var newDirective, directives;
       if (hasOwnProperty(directivesByName, name)) {
         var directive;
-        var fileIndex = injular.indexByDirectiveName[name];
+        var fileIndex = auxInjular.indexByDirectiveName[name];
         directives = $injector.get(name + DIRECTIVE_SUFFIX);
         if (fileIndex < directiveList.length) {
           directive = directiveList[fileIndex];
@@ -679,7 +679,7 @@
         newDirective = directives[directives.length - 1];
         if (angular.isObject(newDirective)) {
           directivesByName[name] = [newDirective];
-          injular.indexByDirectiveName[name]++;
+          auxInjular.indexByDirectiveName[name]++;
         } else {
           directives.pop();
         }
@@ -687,13 +687,13 @@
 
       // Increment after adding directive.
       // Not before because an error in the directive factory can cause problems
-      injular.indexByDirectiveName[name]++;
+      auxInjular.indexByDirectiveName[name]++;
 
       return this;
     }
 
     function getCompileProvider() {
-      var $compileProvider = injular.$compileProvider;
+      var $compileProvider = auxInjular.$compileProvider;
       if (!$compileProvider) {
         throwError(
           'Could not get $compileProvider. ' +
